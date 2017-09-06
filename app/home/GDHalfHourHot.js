@@ -39,6 +39,10 @@ export default class GDHalfHourHot extends Component {
         this.fetchData = this.fetchData.bind(this);
       }
 
+    static defaultProps = {
+          removeModel:{},
+    }
+
     // 网络请求的方法
     fetchData(resolve) {
           // setTimeout(() => {
@@ -77,8 +81,9 @@ export default class GDHalfHourHot extends Component {
           // }, 1000);
     }
 
-    popToHome() {
-          this.props.navigator.pop();
+    popToHome(data) {
+          // this.props.navigator.pop();
+        this.props.removeModel(data);
     }
 
     // 返回中间按钮
@@ -92,7 +97,7 @@ export default class GDHalfHourHot extends Component {
     renderRightItem() {
         return(
             <TouchableOpacity
-                onPress={() => this.popToHome()}
+                onPress={() => this.popToHome(false)}
             >
                 <Text style={styles.navbarRightItemStyle}>关闭</Text>
             </TouchableOpacity>

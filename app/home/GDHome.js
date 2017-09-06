@@ -12,6 +12,8 @@ import {
     ListView,
     Dimensions,
     ActivityIndicator,
+    Modal,
+    AsyncStorage,
 } from 'react-native';
 
 // 第三方
@@ -38,38 +40,102 @@ export default class GDHome extends Component {
         this.state = {
             dataSource:new ListView.DataSource({rowHasChanged:(r1, r2) => r1 !== r2}),
             loaded:false,
+            isModal:false,
         };
-        this.fetchData = this.fetchData.bind(this);
+
+        this.data = [];
+        this.loadData = this.loadData.bind(this);
         this.loadMore = this.loadMore.bind(this);
     }
 
-    // 网络请求的方法
-    fetchData(resolve) {
+    // 加载最新数据网络请求
+    loadData(resolve) {
 
-        let params = {"count" : 5};
+        let params = {"count" : 10};
 
-        HTTPBase.post('http://guangdiu.com/api/getlist.php', params, {})
+        HTTPBase.get('https://guangdiu.com/api/getlist.php', params, {})
             .then((responseData) => {
+
+                // 拼接数据
+                this.data = this.data.concat(responseData.data);
+
+                // 重新渲染
                 this.setState({
-                    dataSource: this.state.dataSource.cloneWithRows(responseData.data),
+                    dataSource: this.state.dataSource.cloneWithRows(this.data),
                     loaded: true,
                 });
+
+                // 关闭刷新动画
                 if (resolve !== undefined) {
                     setTimeout(() => {
                         resolve();
                     }, 1000);
                 }
+
+                // 存储数组中最后一个元素的id
+                let lastID = responseData.data[responseData.data.length - 1].id;
+                console.log(responseData.data);
+                // 只能存储字符或者字符串
+                AsyncStorage.setItem('lastID', lastID.toString());
+
             })
             .catch((error) => {
 
             })
     }
+
+    // 加载更多数据的网络请求
+    loadMoreData(value) {
+
+        // 读取存储的id
+        let params = {
+            "count" : 10,
+            "sinceid":value,
+        };
+
+        // 加载更多数据请求
+        HTTPBase.get('https://guangdiu.com/api/getlist.php', params)
+            .then((responseData) => {
+
+                // 拼接数据
+                this.data = this.data.concat(responseData.data);
+
+                this.setState({
+                    dataSource: this.state.dataSource.cloneWithRows(this.data),
+                    loaded: true,
+                });
+                console.log(responseData);
+
+                // 存储数组中最后一个元素的id
+                let lastID = responseData.data[responseData.data.length - 1].id;
+                console.log(responseData.data);
+                // 只能存储字符或者字符串
+                AsyncStorage.setItem('lastID', lastID.toString());
+
+            })
+            .catch((error) => {
+            })
+    }
+
+    // 加载更多数据操作
+    loadMore() {
+        // 读取存储的ID
+        AsyncStorage.getItem('lastID')
+            .then((value) => {
+                // 数据加载操作
+                this.loadMoreData(value);
+            })
+    }
     
     // 跳转到近半小时热门
     pushToHalfHourHot() {
-        this.props.navigator.push({
-            component:HalfHourHot,
-            animationType:Navigator.SceneConfigs.FloatFromBottom,
+        // this.props.navigator.push({
+        //     component:HalfHourHot,
+        //     animationType:Navigator.SceneConfigs.FloatFromBottom,
+        // })
+        // 使用模态跳转
+        this.setState({
+            isModal:true,
         })
     }
 
@@ -77,6 +143,20 @@ export default class GDHome extends Component {
     pushToSearch() {
         this.props.navigator.push({
             component:Search,
+        })
+    }
+
+    // 安卓模态销毁处理
+    onRequestClose() {
+        this.setState({
+            isModal:false,
+        })
+    }
+
+    // 关闭模态
+    closeModal(data) {
+        this.setSate({
+            isModal:data,
         })
     }
     
@@ -91,10 +171,20 @@ export default class GDHome extends Component {
         );
     }
 
+    showID() {
+        // 读取存储的ID
+        AsyncStorage.getItem('lastID')
+            .then((value) => {
+                alert(value);
+            })
+    }
+
     // 返回中间按钮
     renderTitleItem() {
         return(
-            <TouchableOpacity>
+            <TouchableOpacity
+                onPress={() => this.showID()}
+            >
                 <Image source={{uri:'navtitle_home_down_66x20'}} style={styles.navbarTitleItemStyle}/>
             </TouchableOpacity>
         );
@@ -109,21 +199,6 @@ export default class GDHome extends Component {
                 <Image source={{uri:'search_icon_20x20'}} style={styles.navbarRightItemStyle}/>
             </TouchableOpacity>
         );
-    }
-    
-    loadMore() {
-        setTimeout(() => {
-
-            fetch('http://guangdiu.com/api/gethots.php')
-                .then((response) => response.json())
-                .then((responseData) => {
-                    this.setState({
-                        dataSource: this.state.dataSource.cloneWithRows(responseData.data),
-                        loaded: true,
-                    });
-                })
-                .done()
-        }, 1000);
     }
 
     // 返回listview尾部
@@ -144,7 +219,7 @@ export default class GDHome extends Component {
         } else {
             return (
                 <PullList
-                    onPullRelease={(resolve) => this.fetchData(resolve)}
+                    onPullRelease={(resolve) => this.loadData(resolve)}
                     dataSource={this.state.dataSource}
                     renderRow={this.renderRow}
                     // showsHorizontalScrollIndicator={false}
@@ -170,12 +245,22 @@ export default class GDHome extends Component {
     }
 
     componentDidMount() {
-        this.fetchData();
+        this.loadData();
     }
 
     render() {
         return (
             <View style={styles.container}>
+                {/* 初始化模态 用于跳转到 半小时热门界面 以及 回退回来*/}
+                <Modal
+                    animationType='slide'
+                    transparent={false}
+                    visible={this.state.isModal}
+                    onRequestClose={() => this.onRequestClose()}
+                >
+                    <HalfHourHot removeModal={(data) => this.closeModal(data)}/>
+                </Modal>
+
                 {/* 导航栏样式 */}
                 <CommunalNavBar
                     leftItem={() => this.renderLeftItem()}
