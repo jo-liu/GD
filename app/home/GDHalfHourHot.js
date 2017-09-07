@@ -106,20 +106,20 @@ export default class GDHalfHourHot extends Component {
 
     /* 根据网络状态决定是否渲染listview*/
     renderListView() {
-        if (this.state.loaded === false) {
-            return (
+        if (this.state.loaded === false) {  // 无数据
+            return(
                 <NoDataView />
             );
-        } else {
-            return (
+        }else {     // 有数据
+            return(
                 <PullList
-                    onPullRelease={(resolve) => this.fetchData(resolve)}
-                    dataSource={this.state.dataSource}
-                    renderRow={this.renderRow}
-                    // showsHorizontalScrollIndicator={false}
-                    style={styles.ListViewStyle}
-                    initialListSize={5}
-                    renderHeader={this.renderHeader}
+                    onPullRelease={(resolve) => this.fetchData(resolve)}    // 下拉刷新操作
+                    dataSource={this.state.dataSource}          // 设置数据源
+                    renderRow={this.renderRow.bind(this)}       // 根据数据创建相应 cell
+                    showsHorizontalScrollIndicator={false}      // 隐藏水平指示器
+                    style={styles.listViewStyle}                // 样式
+                    initialListSize={7}                         // 优化:一次渲染几条数据
+                    renderHeader={this.renderHeader}            // 设置头部视图
                 />
             );
         }
