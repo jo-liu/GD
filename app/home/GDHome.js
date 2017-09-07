@@ -26,9 +26,9 @@ const {width, height} = Dimensions.get('window');
 import CommunalNavBar from '../main/GDCommunalNavBar';
 import CommunalHotCell from '../main/GDCommunalHotCell';
 import CommunalDetail from '../main/GDCommunalDetail';
-import NoDataView from '../main/GDNoDataView';
 import HalfHourHot from './GDHalfHourHot';
-import Search from './GDSearch';
+import Search from '../main/GDSearch';
+import NoDataView from '../main/GDNoDataView';
 
 import HTTPBase from '../http/HTTPBase';
 
@@ -57,6 +57,9 @@ export default class GDHome extends Component {
         HTTPBase.get('https://guangdiu.com/api/getlist.php', params, {})
             .then((responseData) => {
 
+                // 清空数据
+                this.data = [];
+
                 // 拼接数据
                 this.data = this.data.concat(responseData.data);
 
@@ -74,10 +77,13 @@ export default class GDHome extends Component {
                 }
 
                 // 存储数组中最后一个元素的id
-                let lastID = responseData.data[responseData.data.length - 1].id;
-                console.log(responseData.data);
+                let cnlastId = responseData.data[responseData.data.length - 1].id;
                 // 只能存储字符或者字符串
-                AsyncStorage.setItem('lastID', lastID.toString());
+                AsyncStorage.setItem('cnlastID', cnlastId.toString());
+                // 存储数组中第一个元素的id
+                let cnfirstID = responseData.data[0].id;
+                AsyncStorage.setItem('cnfirstID', cnfirstID.toString());
+
 
             })
             .catch((error) => {
@@ -108,10 +114,10 @@ export default class GDHome extends Component {
                 console.log(responseData);
 
                 // 存储数组中最后一个元素的id
-                let lastID = responseData.data[responseData.data.length - 1].id;
+                let cnlastId = responseData.data[responseData.data.length - 1].id;
                 console.log(responseData.data);
                 // 只能存储字符或者字符串
-                AsyncStorage.setItem('lastID', lastID.toString());
+                AsyncStorage.setItem('cnlastId', cnlastId.toString());
 
             })
             .catch((error) => {
@@ -121,7 +127,7 @@ export default class GDHome extends Component {
     // 加载更多数据操作
     loadMore() {
         // 读取存储的ID
-        AsyncStorage.getItem('lastID')
+        AsyncStorage.getItem('cnlastId')
             .then((value) => {
                 // 数据加载操作
                 this.loadMoreData(value);
@@ -156,7 +162,7 @@ export default class GDHome extends Component {
 
     // 关闭模态
     closeModal(data) {
-        this.setSate({
+        this.setState({
             isModal:data,
         })
     }
@@ -172,20 +178,10 @@ export default class GDHome extends Component {
         );
     }
 
-    showID() {
-        // 读取存储的ID
-        AsyncStorage.getItem('lastID')
-            .then((value) => {
-                alert(value);
-            })
-    }
-
     // 返回中间按钮
     renderTitleItem() {
         return(
-            <TouchableOpacity
-                onPress={() => this.showID()}
-            >
+            <TouchableOpacity>
                 <Image source={{uri:'navtitle_home_down_66x20'}} style={styles.navbarTitleItemStyle}/>
             </TouchableOpacity>
         );
@@ -268,12 +264,28 @@ export default class GDHome extends Component {
             <View style={styles.container}>
                 {/* 初始化模态 用于跳转到 半小时热门界面 以及 回退回来*/}
                 <Modal
+                    // 动画类型 none 没有动画 slide 从底部滑入 fade 淡入视野
                     animationType='slide'
+                    // 透明度
                     transparent={false}
+                    // 可见性
                     visible={this.state.isModal}
+                    // 被销毁时会调用此函数 在Android平台，必须使用次函数
+                    // Platform.OS === 'android' ? PropTypes.func.isRequired: PropTypes.func
                     onRequestClose={() => this.onRequestClose()}
                 >
-                    <HalfHourHot removeModal={(data) => this.closeModal(data)}/>
+                    <Navigator
+                        initialRoute={{
+                            name:'halfHourHot',
+                            component:HalfHourHot,
+                        }}
+                        renderScene={(route, navigator) => {
+                            let Component = route.component;
+                            return <Component
+                                removeModal={(data) => this.closeModal(data)}
+                                {...route.params}
+                                navigator={navigator}/>
+                        }}/>
                 </Modal>
 
                 {/* 导航栏样式 */}

@@ -1,5 +1,5 @@
 /**
- * Created by Jo on 2017/8/30.
+ * Created by Jo on 2017/9/7.
  */
 
 import React, { Component } from 'react';
@@ -27,14 +27,14 @@ import NoDataView from '../main/GDNoDataView';
 
 import HTTPBase from '../http/HTTPBase'
 
-export default class GDHalfHourHot extends Component {
+export default class GDUSHalfHourHot extends Component {
 
     static defaultProps = {
         removeModal:{}      // 销毁模态回调
     };
 
     // 构造
-      constructor(props) {
+    constructor(props) {
         super(props);
         // 初始状态
         this.state = {
@@ -42,48 +42,52 @@ export default class GDHalfHourHot extends Component {
             loaded:false,
         };
         this.fetchData = this.fetchData.bind(this);
-      }
+    }
 
     // 网络请求的方法
     fetchData(resolve) {
-          // setTimeout(() => {
-              HTTPBase.get('http://guangdiu.com/api/gethots.php')
-                  .then((responseData) => {
-                      this.setState({
-                          dataSource: this.state.dataSource.cloneWithRows(responseData.data),
-                          loaded: true,
-                      });
-                      console.log(responseData);
-                      if (resolve !== undefined) {
-                          setTimeout(() => {
-                              resolve();   // 关闭动画
-                          }, 1000);
-                      }
-                  })
-                  .catch((error) => {
+        let params = {
+            "c" : "us",
+        }
 
-                  });
+        // setTimeout(() => {
+        HTTPBase.get('http://guangdiu.com/api/gethots.php', params)
+            .then((responseData) => {
+                this.setState({
+                    dataSource: this.state.dataSource.cloneWithRows(responseData.data),
+                    loaded: true,
+                });
+                console.log(responseData);
+                if (resolve !== undefined) {
+                    setTimeout(() => {
+                        resolve();   // 关闭动画
+                    }, 1000);
+                }
+            })
+            .catch((error) => {
 
-          //     fetch('http://guangdiu.com/api/gethots.php')
-          //     .then((response) => response.json())
-          //     .then((responseData) => {
-          //         this.setState({
-          //             dataSource: this.state.dataSource.cloneWithRows(responseData.data),
-          //             loaded: true,
-          //         });
-          //         console.log(responseData);
-          //         if (resolve !== undefined) {
-          //             setTimeout(() => {
-          //                 resolve();
-          //             }, 1000);
-          //         }
-          //     })
-          //     .done()
-          // }, 1000);
+            });
+
+        //     fetch('http://guangdiu.com/api/gethots.php')
+        //     .then((response) => response.json())
+        //     .then((responseData) => {
+        //         this.setState({
+        //             dataSource: this.state.dataSource.cloneWithRows(responseData.data),
+        //             loaded: true,
+        //         });
+        //         console.log(responseData);
+        //         if (resolve !== undefined) {
+        //             setTimeout(() => {
+        //                 resolve();
+        //             }, 1000);
+        //         }
+        //     })
+        //     .done()
+        // }, 1000);
     }
 
     popToHome(data) {
-          // this.props.navigator.pop();
+        // this.props.navigator.pop();
         this.props.removeModal(data);
     }
 
@@ -150,16 +154,16 @@ export default class GDHalfHourHot extends Component {
 
     // 返回每一行cell的样式
     renderRow(rowData) {
-          return(
-              <TouchableOpacity
-                  onPress={() => this.pushToDetail(rowData.id)}
-              >
+        return(
+            <TouchableOpacity
+                onPress={() => this.pushToDetail(rowData.id)}
+            >
                 <CommunalHotCell
                     image={rowData.image}
                     title={rowData.title}
                 />
-              </TouchableOpacity>
-          );
+            </TouchableOpacity>
+        );
     }
 
     componentWillMount() {
