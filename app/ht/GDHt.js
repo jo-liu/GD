@@ -24,7 +24,7 @@ const {width, height} = Dimensions.get('window');
 
 // 引用外部文件
 import CommunalNavBar from '../main/GDCommunalNavBar';
-import CommunalHotCell from '../main/GDCommunalHotCell';
+import CommunalCell from '../main/GDCommunalCell';
 import CommunalDetail from '../main/GDCommunalDetail';
 import USHalfHourHot from './GDUSHalfHourHot';
 import Search from '../main/GDSearch';
@@ -85,9 +85,22 @@ export default class GDHt extends Component {
                 // 存储数组中第一个元素的id
                 let usfirstID = responseData.data[0].id;
                 AsyncStorage.setItem('usfirstID', usfirstID.toString());
+
+                // 清除本地存储的数据
+                RealmBase.removeAllData('HomeData');
+
+                // 存储数据到本地
+                RealmBase.create('HomeData', responseData);
             })
             .catch((error) => {
+                // 拿到本地存储的数据，展示出来，如果没有存储，那就显示无数据页面
+                this.data = RealmBase.loadAll('HomeData');
 
+                // 重新渲染
+                this.setState({
+                    dataSource: this.state.dataSource.cloneWithRows(this.data),
+                    loaded: true,
+                });
             })
     }
 
@@ -104,6 +117,8 @@ export default class GDHt extends Component {
         // 加载更多数据请求
         HTTPBase.get('https://guangdiu.com/api/getlist.php', params)
             .then((responseData) => {
+                // 清空数组
+                this.data = {};
 
                 // 拼接数据
                 this.data = this.data.concat(responseData.data);
@@ -119,7 +134,6 @@ export default class GDHt extends Component {
                 console.log(responseData.data);
                 // 只能存储字符或者字符串
                 AsyncStorage.setItem('uslastID', uslastID.toString());
-
             })
             .catch((error) => {
             })
@@ -248,9 +262,12 @@ export default class GDHt extends Component {
             <TouchableOpacity
                 onPress={() => this.pushToDetail(rowData.id)}
             >
-                <CommunalHotCell
+                <CommunalCell
                     image={rowData.image}
                     title={rowData.title}
+                    mall={rowData.mall}
+                    pubTime={rowData.pubtime}
+                    fromSite={rowData.fromsite}
                 />
             </TouchableOpacity>
         );

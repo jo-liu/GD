@@ -11,7 +11,8 @@
     "react-native": "0.47.2",
     "react-native-deprecated-custom-components": "^0.1.1",
     "react-native-pull": "^2.0.2",
-    "react-native-tab-navigator": "^0.3.4"
+    "react-native-tab-navigator": "^0.3.4",
+    "realm": "^1.11.1"
   },
   "devDependencies": {
     "babel-jest": "20.0.3",

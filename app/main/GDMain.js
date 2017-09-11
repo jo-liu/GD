@@ -22,6 +22,7 @@ import Home from '../home/GDHome';
 import HT from '../ht/GDHt';
 import HourList from '../hourList/GDHourList';
 import HTTPBase from '../http/HTTPBase';
+import RealmStorage from '../storage/realmStorage'
 
 export default class GD extends Component {
     // ES6
@@ -118,6 +119,9 @@ export default class GD extends Component {
                             cnbadgeText:responseData.cn,
                             usbadgeText:responseData.us,
                         })
+                    })
+                    .catch((error) => {
+
                     })
             }
         }, 30000);
