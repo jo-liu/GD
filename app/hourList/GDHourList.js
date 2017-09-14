@@ -39,6 +39,7 @@ import CommunalNavBar from '../main/GDCommunalNavBar';
 import CommunalCell from '../main/GDCommunalCell';
 import CommunalDetail from '../main/GDCommunalDetail';
 import NoDataView from '../main/GDNoDataView';
+import Settings from './GDSettings'
 
 import HTTPBase from '../http/HTTPBase';
 
@@ -51,31 +52,44 @@ export default class GDHourList extends Component {
         this.state = {
             dataSource:new ListView.DataSource({rowHasChanged:(r1, r2) => r1 !== r2}),
             loaded:false,
-            isModal:false,
+            prompt:'',
+            isNextTouch:false,
         };
 
-        this.data = [];
-        this.loadData = this.loadData.bind(this);
+        this.nexthourhour = '';
+        this.nexthourdate = '';
+        this.lasthourhour = '';
+        this.lasthourdate = '';
+        this.nowHour = 0;
     }
 
     // 加载最新数据网络请求
-    loadData(resolve) {
-
+    loadData(resolve, date, hour) {
         let params = {};
 
-        HTTPBase.get('https://guangdiu.com/api/getranklist.php', params, {})
+        if (date) {
+            params = {
+                "date" : date,
+                "hour" : hour,
+            }
+        }
+
+        HTTPBase.get('https://guangdiu.com/api/getranklist.php', params)
             .then((responseData) => {
 
-                // 清空数组
-                this.data = [];
+                let isNextTouch = true;
 
-                // 拼接数据
-                this.data = this.data.concat(responseData.data);
+                if (responseData.hasnexthour == 1) {
+                    isNextTouch = false;
+                }
+
 
                 // 重新渲染
                 this.setState({
-                    dataSource: this.state.dataSource.cloneWithRows(this.data),
+                    dataSource: this.state.dataSource.cloneWithRows(responseData.data),
                     loaded: true,
+                    prompt:responseData.displaydate + responseData.rankhour + "点档" + '(' + responseData.rankduring + ')',
+                    isNextTouch:isNextTouch,
                 });
 
                 // 关闭刷新动画
@@ -85,36 +99,23 @@ export default class GDHourList extends Component {
                     }, 1000);
                 }
 
-                // 存储数组中最后一个元素的id
-                let cnlastId = responseData.data[responseData.data.length - 1].id;
-                // 只能存储字符或者字符串
-                AsyncStorage.setItem('cnlastID', cnlastId.toString());
-                // 存储数组中第一个元素的id
-                let cnfirstID = responseData.data[0].id;
-                AsyncStorage.setItem('cnfirstID', cnfirstID.toString());
-
-                // 清除本地存储的数据
-                RealmBase.removeAllData('HomeData');
-
-                // 存储数据到本地
-                RealmBase.create('HomeData', responseData);
+                // 暂时保留一些数据
+                this.nexthourhour = responseData.nexthourhour;
+                this.nexthourdate = responseData.nexthourdate;
+                this.lasthourhour = responseData.lasthourhour;
+                this.lasthourdate = responseData.lasthourdate;
             })
             .catch((error) => {
-                // 拿到本地存储的数据，展示出来，如果没有存储，那就显示无数据页面
-                this.data = RealmBase.loadAll('HomeData');
-
-                // 重新渲染
-                this.setState({
-                    dataSource: this.state.dataSource.cloneWithRows(this.data),
-                    loaded: true,
-                });
             })
     }
 
     // 跳转到设置
     pushToSettings() {
-
+        this.props.navigator.push({
+            component:Settings,
+        })
     }
+
 
     // 返回中间标题
     renderTitleItem() {
@@ -185,6 +186,30 @@ export default class GDHourList extends Component {
         this.loadData();
     }
 
+    nowDate () {
+        let date = new Date();  // 获取当前时间
+        let year = date.getFullYear();  // 年
+        let month = date.getMonth();    // 月
+        let day = date.getDate();    // 日
+
+        if (month >= 1 && month <= 8) {     // 在10以内，我们手动添加0
+            month = "0" + (month + 1);      // 注意，js中月份是以 0 开始的
+        }
+
+        if (day >= 1 && day <= 9) {
+            day = "0" + day;
+        }
+
+        return year + month + day;
+    }
+
+    lastHour() {
+        this.loadData(undefined, this.lasthourdate, this.lasthourhour);
+    }
+
+    nextHour() {
+        this.loadData(undefined, this.nexthourdate, this.nexthourhour);
+    }
 
     render() {
         return (
@@ -197,18 +222,23 @@ export default class GDHourList extends Component {
 
                 {/* 提醒栏 */}
                 <View style={styles.promptViewStyle}>
-                    <Text>提示栏</Text>
+                    <Text>{this.state.prompt}</Text>
                 </View>
                 {/* 根据网络状态决定是否渲染 listview */}
                 {this.renderListView()}
 
                 {/* 操作栏 */}
                 <View style={styles.operationViewStyle}>
-                    <TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => this.lastHour()}
+                    >
                         <Text style={{marginRight:10, fontSize:17, color:'green'}}>{"< " + "上1小时"} </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity>
-                        <Text style={{marginLeft:10, fontSize:17, color:'green'}}>{"下1小时" + " >"} </Text>
+                    <TouchableOpacity
+                        onPress={() => this.nextHour()}
+                        disabled={this.state.isNextTouch}
+                    >
+                        <Text style={{marginLeft:10, fontSize:17, color:this.state.isNextTouch == false ? 'green' : 'gray'}}>{"下1小时" + " >"} </Text>
                     </TouchableOpacity>
                 </View>
 
